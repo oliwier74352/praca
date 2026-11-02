@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Łapacz Kropek - Gra na Refleks</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #1a1a2e;
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        h1 {
+            margin-bottom: 10px;
+            color: #e94560;
+        }
+
+        #scoreboard {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 20px;
+        }
+
+        #game-container {
+            width: 400px;
+            height: 400px;
+            background: #16213e;
+            border: 4px solid #0f3460;
+            border-radius: 12px;
+            position: relative;
+            cursor: crosshair;
+            overflow: hidden;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+        }
+
+        .dot {
+            width: 40px;
+            height: 40px;
+            background: #e94560;
+            border-radius: 50%;
+            position: absolute;
+            cursor: pointer;
+            transition: transform 0.1s;
+            box-shadow: 0 0 10px #e94560;
+        }
+
+        .dot:active {
+            transform: scale(0.85);
+        }
+
+        #start-btn {
+            margin-top: 20px;
+            padding: 10px 25px;
+            font-size: 1rem;
+            background-color: #0f3460;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        #start-btn:hover {
+            background-color: #e94560;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Łapacz Kropek</h1>
+    
+    <div id="scoreboard">
+        <div>Wynik: <span id="score">0</span></div>
+        <div>Czas: <span id="timer">30</span>s</div>
+    </div>
+
+    <div id="game-container"></div>
+
+    <button id="start-btn" onclick="startGame()">Rozpocznij Grę</button>
+
+    <script>
+        const gameContainer = document.getElementById('game-container');
+        const scoreDisplay = document.getElementById('score');
+        const timerDisplay = document.getElementById('timer');
+        const startBtn = document.getElementById('start-btn');
+
+        let score = 0;
+        let timeLeft = 30;
+        let gameInterval = null;
+        let dotTimeout = null;
+
+        function startGame() {
+            // Reset stanu gry
+            gameContainer.innerHTML = '';
+            score = 0;
+            timeLeft = 30;
+            scoreDisplay.textContent = score;
+            timerDisplay.textContent = timeLeft;
+            startBtn.style.display = 'none';
+
+            // Timer gry
+            gameInterval = setInterval(() => {
+                timeLeft--;
+                timerDisplay.textContent = timeLeft;
+
+                if (timeLeft <= 0) {
+                    endGame();
+                }
+            }, 1000);
+
+            spawnDot();
+        }
+
+        function spawnDot() {
+            if (timeLeft <= 0) return;
+
+            // Usuń poprzednią kropkę, jeśli jeszcze istniała
+            gameContainer.innerHTML = '';
+
+            const dot = document.createElement('div');
+            dot.classList.add('dot');
+
+            // Losowa pozycja wewnątrz kontenera (uwzględniając rozmiar kropki 40px)
+            const maxX = gameContainer.clientWidth - 40;
+            const maxY = gameContainer.clientHeight - 40;
+            const randomX = Math.floor(Math.random() * maxX);
+            const randomY = Math.floor(Math.random() * maxY);
+
+            dot.style.left = randomX + 'px';
+            dot.style.top = randomY + 'px';
+
+            // Kliknięcie w kropkę
+            dot.addEventListener('click', () => {
+                score++;
+                scoreDisplay.textContent = score;
+                clearTimeout(dotTimeout);
+                spawnDot();
+            });
+
+            gameContainer.appendChild(dot);
+
+            // Czas na kliknięcie kropki (im wyższy wynik, tym szybciej znika - trudniej!)
+            let speed = Math.max(600, 1500 - (score * 30));
+            
+            dotTimeout = setTimeout(() => {
+                spawnDot();
+            }, speed);
+        }
+
+        function endGame() {
+            clearInterval(gameInterval);
+            clearTimeout(dotTimeout);
+            gameContainer.innerHTML = `<div style="display: flex; align-items: center; justify-content: center; height: 100%; font-size: 1.5rem; text-align: center;">Koniec gry!<br>Twój wynik: ${score}</div>`;
+            startBtn.style.display = 'block';
+            startBtn.textContent = 'Zagraj Ponownie';
+        }
+    </script>
+
+</body>
+</html>
