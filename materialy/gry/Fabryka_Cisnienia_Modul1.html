@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fabryka Ciśnienia – Moduł 1</title>
+<style>
+:root{--bg:#141c24;--panel:#1e2a36;--line:#34475a;--tx:#e8eef4;--mut:#93a4b5;--air:#5ec8e5;--oil:#e8932a;--ok:#6fd08c;--bad:#ee6a5f}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:17px/1.5 "Bahnschrift","Segoe UI",Arial,sans-serif;min-height:100vh}
+#wrap{max-width:760px;margin:0 auto;padding:20px 16px 60px}
+header{display:flex;justify-content:space-between;align-items:baseline;border-bottom:3px solid var(--line);padding-bottom:10px;margin-bottom:22px}
+header b{font-size:20px;letter-spacing:.5px}
+#score{color:var(--oil);font-weight:700}
+h1{font-size:34px;line-height:1.15;margin:.2em 0 .3em}
+h2{font-size:24px;margin:.2em 0 .5em}
+p{margin:.5em 0;max-width:62ch}
+.card{background:var(--panel);border:2px solid var(--line);border-radius:6px;padding:18px;margin:14px 0}
+.mission{display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;text-align:left;background:var(--panel);color:var(--tx);border:2px solid var(--line);border-left:8px solid var(--air);border-radius:6px;padding:14px 16px;margin:10px 0;font:inherit;cursor:pointer}
+.mission:hover,.mission:focus-visible{border-color:var(--air);outline:none}
+.mission.oil{border-left-color:var(--oil)}
+.mission small{color:var(--mut);display:block}
+.mission .st{font-size:22px;white-space:nowrap}
+button.b{background:var(--oil);color:#1a1205;border:0;border-radius:4px;padding:11px 20px;font:700 17px inherit;font-family:inherit;cursor:pointer;margin:6px 6px 6px 0}
+button.b.alt{background:transparent;color:var(--tx);border:2px solid var(--line)}
+button.b:disabled{opacity:.4;cursor:default}
+button:focus-visible,input:focus-visible{outline:3px solid var(--air);outline-offset:2px}
+.opts{display:grid;gap:10px;margin:12px 0}
+.opt{background:var(--bg);color:var(--tx);border:2px solid var(--line);border-radius:5px;padding:12px 14px;font:inherit;text-align:left;cursor:pointer}
+.opt:hover{border-color:var(--mut)}
+.opt.sel{border-color:var(--air);background:#1b3340}
+.opt.ok{border-color:var(--ok);background:#173222}
+.opt.no{border-color:var(--bad);background:#3a1e1d}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.two .opt{text-align:center;font-weight:700;font-size:18px}
+.air{color:var(--air)}.oil{color:var(--oil)}
+.fb{margin-top:12px;padding:12px 14px;border-left:6px solid var(--mut);background:var(--bg)}
+.fb.ok{border-color:var(--ok)}.fb.no{border-color:var(--bad)}
+label.sl{display:block;margin:14px 0 4px}
+input[type=range]{width:100%;accent-color:var(--oil)}
+input[type=number]{width:140px;padding:10px;font:inherit;background:var(--bg);color:var(--tx);border:2px solid var(--line);border-radius:4px}
+.gauge{height:26px;background:var(--bg);border:2px solid var(--line);border-radius:4px;position:relative;margin:10px 0}
+.gauge i{position:absolute;left:0;top:0;bottom:0;background:var(--air);transition:width .25s}
+.gauge u{position:absolute;top:-6px;bottom:-6px;width:4px;background:var(--oil);text-decoration:none}
+.big{font-size:30px;font-weight:700}
+.prog{color:var(--mut);margin-bottom:6px}
+svg{max-width:100%}
+@media(max-width:520px){h1{font-size:28px}.two{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div id="wrap">
+<header><b>Fabryka Ciśnienia · Moduł 1</b><span id="score"></span></header>
+<main id="app"></main>
+</div>
+<script>
+var S={pts:0,done:{}};
+try{var sv=JSON.parse(localStorage.getItem('fc1')||'null');if(sv)S=sv}catch(e){}
+function save(){try{localStorage.setItem('fc1',JSON.stringify(S))}catch(e){}}
+var $=function(id){return document.getElementById(id)};
+function R(h){$('app').innerHTML=h;$('score').textContent='Punkty: '+S.pts;window.scrollTo(0,0)}
+function stars(k){var n=S.done[k];return n==null?'':'★'.repeat(n)+'☆'.repeat(3-n)}
+function finish(k,pts,max){var st=pts>=max?3:pts>=max*0.6?2:1;if(S.done[k]==null||st>S.done[k])S.done[k]=st;save();return st}
+
+/* ---------- MENU ---------- */
+function menu(){
+var all=['m1','m2','m3','boss'].every(function(k){return S.done[k]!=null});
+R('<h1>Witaj w hali, inżynierze.</h1>'+
+'<p>Cztery zlecenia sprawdzą, czy rozumiesz ciśnienie, media robocze, prawo Pascala i dobór pneumatyki lub hydrauliki. Gra działa offline, a wynik zapisuje się w przeglądarce.</p>'+
+'<button class="mission" onclick="m1(0)"><span>Zlecenie 1: Ustaw siłownik<small>Siła = ciśnienie × powierzchnia</small></span><span class="st">'+stars('m1')+'</span></button>'+
+'<button class="mission oil" onclick="m2(0)"><span>Zlecenie 2: Pneumatyka czy hydraulika?<small>8 stanowisk w fabryce</small></span><span class="st">'+stars('m2')+'</span></button>'+
+'<button class="mission" onclick="m3(0)"><span>Zlecenie 3: Prawo Pascala i Boyle’a<small>Liczenie i teoria</small></span><span class="st">'+stars('m3')+'</span></button>'+
+'<button class="mission oil" onclick="boss(0)"><span>Egzamin końcowy: dwa stanowiska<small>Linia pakująca i prasa do blach</small></span><span class="st">'+stars('boss')+'</span></button>'+
+(all?'<div class="card"><b>Moduł 1 zaliczony.</b> Wynik: '+S.pts+' pkt. Zrób zrzut ekranu i wróć do czatu po Moduł 2 (siłowniki).</div>':'')+
+'<button class="b alt" onclick="if(confirm(\'Wyzerować postęp?\')){S={pts:0,done:{}};save();menu()}">Zacznij od nowa</button>');
+}
+
+/* ---------- ZLECENIE 1: FIZYKA SIŁY ---------- */
+var T1=[{F:500,txt:'Docisk w stanowisku montażowym wymaga około 500 N.'},
+{F:1500,txt:'Przepychacz kartonów potrzebuje około 1500 N.'},
+{F:3000,txt:'Zacisk obrabiarki musi dać około 3000 N.'}];
+var m1s={i:0,pts:0};
+function m1(i){
+if(i==0)m1s={i:0,pts:0};
+if(i>=T1.length){var st=finish('m1',m1s.pts,T1.length*10);return R('<h2>Zlecenie 1 ukończone</h2><p class="big">'+m1s.pts+' / '+T1.length*10+' pkt '+('★'.repeat(st))+'</p><p>Pamiętaj: ta sama średnica tłoka daje przy 200 bar około 33 razy większą siłę niż przy 6 bar. Dlatego hydraulika wygrywa tam, gdzie liczy się siła.</p><button class="b" onclick="menu()">Wróć do menu</button>')}
+var t=T1[i];
+R('<div class="prog">Cel '+(i+1)+' z '+T1.length+'</div><h2>Ustaw siłownik pneumatyczny</h2><p>'+t.txt+' Dobierz ciśnienie i średnicę tłoka tak, by siła mieściła się w granicach ±5%.</p>'+
+'<div class="card"><label class="sl" for="p">Ciśnienie: <b id="pv">6</b> bar</label><input id="p" type="range" min="1" max="10" step="0.5" value="6">'+
+'<label class="sl" for="d">Średnica tłoka: <b id="dv">40</b> mm</label><input id="d" type="range" min="10" max="100" step="1" value="40">'+
+'<div class="gauge" aria-hidden="true"><i id="gi"></i><u id="gt"></u></div>'+
+'<div>Siła: <b class="big" id="fv"></b> N <span style="color:var(--mut)">(cel: '+t.F+' N)</span></div>'+
+'<p style="color:var(--mut)">Wzór: F = p · A, gdzie A = π·d²/4</p></div>'+
+'<button class="b" id="chk">Sprawdź</button><div id="fb"></div>');
+var max=t.F*2;
+function upd(){var p=+$('p').value,d=+$('d').value;$('pv').textContent=p;$('dv').textContent=d;
+var F=p*1e5*Math.PI*Math.pow(d/1000,2)/4;$('fv').textContent=Math.round(F);
+$('gi').style.width=Math.min(100,F/max*100)+'%';$('gt').style.left='calc('+(t.F/max*100)+'% - 2px)';return F}
+$('p').oninput=upd;$('d').oninput=upd;upd();
+$('chk').onclick=function(){var F=upd(),err=Math.abs(F-t.F)/t.F,g=err<=.05,pts=g?10:err<=.15?5:0;m1s.pts+=pts;
+$('chk').disabled=true;
+$('fb').innerHTML='<div class="fb '+(g?'ok':'no')+'">'+(g?'Trafione! ':'Siła wyszła '+Math.round(F)+' N. ')+'Zdobywasz '+pts+' pkt.</div><button class="b" onclick="m1('+(i+1)+')">Dalej</button>'};
+}
+
+/* ---------- ZLECENIE 2: DOBÓR UKŁADU ---------- */
+var Q2=[
+['Przepychanie lekkich kartonów na taśmę, 60 razy na minutę.','P','Małe siły i duża częstotliwość to klasyczna pneumatyka: szybko, tanio, prosto.'],
+['Prasa tłocząca stalową blachę nadwozia siłą kilkuset ton.','H','Tylko hydraulika daje tak duże siły w rozsądnych gabarytach.'],
+['Chwytak pakujący jogurty w zakładzie spożywczym.','P','Pneumatyka jest czysta: wyciek powietrza nie zanieczyści produktu, a wyciek oleju tak.'],
+['Ramię koparki wbijające się w twardy grunt.','H','Duża siła i sztywne utrzymanie pozycji pod obciążeniem to domena hydrauliki.'],
+['Sortownik odrzucający wadliwe butelki w ułamku sekundy.','P','Liczy się szybkość i niski koszt, a siły są małe.'],
+['Wtryskarka tworzyw sztucznych dociskająca formę ogromną siłą.','H','Wtryskarki potrzebują dużej siły zamknięcia formy i stabilnego ciśnienia.'],
+['Podnośnik samochodowy w warsztacie.','H','Prawo Pascala mnoży siłę, a nieściśliwy olej pewnie utrzymuje ciężar.'],
+['Drzwi autobusu otwierane i zamykane wiele razy dziennie.','P','Małe siły, prosty układ i brak oleju w kabinie pasażerów.']];
+var m2s={i:0,pts:0};
+function m2(i){
+if(i==0)m2s={i:0,pts:0};
+if(i>=Q2.length){var st=finish('m2',m2s.pts,Q2.length*5);return R('<h2>Zlecenie 2 ukończone</h2><p class="big">'+m2s.pts+' / '+Q2.length*5+' pkt '+'★'.repeat(st)+'</p><button class="b" onclick="menu()">Wróć do menu</button>')}
+R('<div class="prog">Stanowisko '+(i+1)+' z '+Q2.length+'</div><h2>'+Q2[i][0]+'</h2><div class="two"><button class="opt air" id="oP">Pneumatyka</button><button class="opt oil" id="oH">Hydraulika</button></div><div id="fb"></div>');
+function pick(a){$('oP').disabled=$('oH').disabled=true;var ok=a==Q2[i][1];if(ok){S.pts+=5;m2s.pts+=5}
+$('o'+Q2[i][1]).classList.add('ok');if(!ok)$('o'+a).classList.add('no');
+$('score').textContent='Punkty: '+S.pts;
+$('fb').innerHTML='<div class="fb '+(ok?'ok':'no')+'"><b>'+(ok?'Dobrze! +5 pkt. ':'Nie tym razem. ')+'</b>'+Q2[i][2]+'</div><button class="b" onclick="m2('+(i+1)+')">Dalej</button>'}
+$('oP').onclick=function(){pick('P')};$('oH').onclick=function(){pick('H')};
+}
+
+/* ---------- ZLECENIE 3: PASCAL I BOYLE ---------- */
+var Q3=[
+{t:'Prasa hydrauliczna: mały tłok ma 2 cm², duży 50 cm². Na mały działasz siłą 100 N. Jaką siłę (w N) uzyskasz na dużym tłoku?',n:2500,u:'N',h:'Ciśnienie jest wszędzie takie samo: p = F1/A1, więc F2 = p · A2.'},
+{t:'Prasa potrzebuje 20 000 N na tłoku o powierzchni 100 cm² (0,01 m²). Jakie ciśnienie (w barach) musi wytworzyć pompa?',n:20,u:'bar',h:'p = F/A = 20 000 / 0,01 = 2 000 000 Pa, a 1 bar to 100 000 Pa.'},
+{t:'Siłownik pneumatyczny „pływa” pod zmiennym obciążeniem, a hydrauliczny trzyma pozycję sztywno. Dlaczego?',c:['Powietrze jest ściśliwe, a olej praktycznie nie','Olej jest cięższy od powietrza','Powietrze ma wyższe ciśnienie niż olej','Siłowniki hydrauliczne są zawsze większe'],a:0,h:'Prawo Boyle’a-Mariotte’a: p·V = const. Pod obciążeniem objętość powietrza maleje, a to oznacza ruch tłoka. Olej prawie nie zmienia objętości.'},
+{t:'Co mówi prawo Pascala?',c:['Ciśnienie w zamkniętej cieczy rozchodzi się jednakowo we wszystkich kierunkach','Siła jest równa masie razy przyspieszenie','Gaz o stałej temperaturze zwiększa objętość wraz z ciśnieniem','Ciecz zawsze płynie z niższego ciśnienia do wyższego'],a:0,h:'Dzięki temu mały tłok może wytworzyć ciśnienie, które na dużym tłoku daje wielokrotnie większą siłę.'}];
+var m3s={i:0,pts:0};
+function m3(i){
+if(i==0)m3s={i:0,pts:0};
+if(i>=Q3.length){var st=finish('m3',m3s.pts,Q3.length*10);return R('<h2>Zlecenie 3 ukończone</h2><p class="big">'+m3s.pts+' / '+Q3.length*10+' pkt '+'★'.repeat(st)+'</p><button class="b" onclick="menu()">Wróć do menu</button>')}
+var q=Q3[i],h='<div class="prog">Pytanie '+(i+1)+' z '+Q3.length+'</div><h2>'+q.t+'</h2>';
+if(q.c){h+='<div class="opts">'+q.c.map(function(c,k){return '<button class="opt" data-k="'+k+'">'+c+'</button>'}).join('')+'</div>'}
+else{h+='<label for="ans">Twoja odpowiedź ('+q.u+'):</label><br><input id="ans" type="number" step="any"> <button class="b" id="go">Sprawdź</button>'}
+R(h+'<div id="fb"></div>');
+function end(ok){if(ok){S.pts+=10;m3s.pts+=10}$('score').textContent='Punkty: '+S.pts;
+$('fb').innerHTML='<div class="fb '+(ok?'ok':'no')+'"><b>'+(ok?'Dobrze! +10 pkt. ':(q.c?'Nie tym razem. ':'Prawidłowo: '+q.n+' '+q.u+'. '))+'</b>'+q.h+'</div><button class="b" onclick="m3('+(i+1)+')">Dalej</button>'}
+if(q.c){var bs=document.querySelectorAll('.opt');bs.forEach(function(b){b.onclick=function(){var k=+b.dataset.k;bs.forEach(function(x){x.disabled=true});bs[q.a].classList.add('ok');if(k!=q.a)b.classList.add('no');end(k==q.a)}})}
+else{$('go').onclick=function(){var v=parseFloat($('ans').value.replace(',','.'));if(isNaN(v))return;$('go').disabled=true;end(Math.abs(v-q.n)/q.n<.03)}}
+}
+
+/* ---------- EGZAMIN KOŃCOWY ---------- */
+var ST=[
+{n:'Stanowisko A',d:'Linia pakująca: siłownik przepycha lekkie kartony na taśmę, 60 razy na minutę.',a:'P',r:[['Potrzebna jest duża częstotliwość cykli',1],['Wymagana siła jest mała',1],['Wymagana jest ogromna siła przy małych gabarytach',0],['Medium musi być nieściśliwe, żeby trzymać pozycję',0]]},
+{n:'Stanowisko B',d:'Prasa tłocząca stalową blachę nadwozia siłą kilkuset ton.',a:'H',r:[['Potrzebna jest bardzo duża siła przy rozsądnych gabarytach',1],['Olej jest praktycznie nieściśliwy, więc ruch jest sztywny i przewidywalny',1],['Ciśnienie robocze 6–8 bar w zupełności wystarczy',0],['Powietrze jest tańsze, więc zawsze lepsze',0]]}];
+var bs={i:0,pts:0,sys:null,sel:{}};
+function boss(i){
+if(i==0)bs={i:0,pts:0,sys:null,sel:{}};
+if(i>=ST.length){var st=finish('boss',bs.pts,ST.length*10);
+return R('<h2>Egzamin zakończony</h2><p class="big">'+bs.pts+' / '+ST.length*10+' pkt '+'★'.repeat(st)+'</p><p>'+(st==3?'Pełna wiedza. Moduł 1 masz opanowany.':'Wróć do zleceń 2 i 3, żeby utrwalić różnice, a potem spróbuj ponownie.')+'</p><button class="b" onclick="menu()">Wróć do menu</button>')}
+bs.sys=null;bs.sel={};var s=ST[i];
+R('<div class="prog">'+s.n+'</div><h2>'+s.d+'</h2><div class="two"><button class="opt air" id="oP">Pneumatyka</button><button class="opt oil" id="oH">Hydraulika</button></div>'+
+'<div class="card"><b>Zaznacz uzasadnienia, które są prawdziwe dla tego stanowiska:</b><div class="opts">'+s.r.map(function(r,k){return '<button class="opt" data-k="'+k+'" aria-pressed="false">'+r[0]+'</button>'}).join('')+'</div></div>'+
+'<button class="b" id="ok" disabled>Zatwierdź</button><div id="fb"></div>');
+function ready(){$('ok').disabled=!bs.sys}
+$('oP').onclick=function(){bs.sys='P';$('oP').classList.add('sel');$('oH').classList.remove('sel');ready()};
+$('oH').onclick=function(){bs.sys='H';$('oH').classList.add('sel');$('oP').classList.remove('sel');ready()};
+var rb=document.querySelectorAll('.card .opt');
+rb.forEach(function(b){b.onclick=function(){var k=b.dataset.k;bs.sel[k]=!bs.sel[k];b.classList.toggle('sel',!!bs.sel[k]);b.setAttribute('aria-pressed',!!bs.sel[k])}});
+$('ok').onclick=function(){$('ok').disabled=true;var p=0,good=bs.sys==s.a;if(good)p+=4;
+var rr=0;s.r.forEach(function(r,k){var on=!!bs.sel[k],c=(on==!!r[1]);if(c)rr++;rb[k].disabled=true;rb[k].classList.remove('sel');rb[k].classList.add(r[1]?'ok':'no');rb[k].classList.toggle('no',!r[1]);if(r[1])rb[k].classList.remove('no')});
+p+=Math.round(rr/s.r.length*6);bs.pts+=p;S.pts+=p;$('score').textContent='Punkty: '+S.pts;
+$('fb').innerHTML='<div class="fb '+(good?'ok':'no')+'"><b>'+(good?'Dobry wybór układu. ':'Lepszy był układ: '+(s.a=='P'?'pneumatyczny':'hydrauliczny')+'. ')+'Zdobywasz '+p+' z 10 pkt.</b> Zielone ramki to prawdziwe uzasadnienia, czerwone to fałszywe.</div><button class="b" onclick="boss('+(i+1)+')">Dalej</button>'};
+}
+menu();
+</script>
+</body>
+</html>
